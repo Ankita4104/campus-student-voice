@@ -1,0 +1,1433 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CampusVoice — NIT Agartala Anonymous Complaint Portal</title>
+    
+    <!-- Google Fonts: Poppins (Display/Headings) and Inter (Core UI) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS (Play CDN for modern, fully customizable UI) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              navy: {
+                50: '#f4f6fc',
+                100: '#e9edf7',
+                200: '#ccd8f0',
+                300: '#a1b8e4',
+                400: '#6f92d4',
+                500: '#4a6ebf',
+                600: '#3854a3',
+                705: '#2e4384',
+                800: '#0e172e', /* Deep Space Navy */
+                900: '#0d1526', /* Immersive Surface Navy */
+                950: '#050b18'  /* Immersive Deep Navy */
+              },
+              electric: {
+                50: '#f0f5ff',
+                100: '#e0ebff',
+                200: '#c2d7ff',
+                300: '#94b9ff',
+                400: '#33e1ff', /* Light Electric Blue */
+                500: '#00d2ff', /* Immersive Electric Blue */
+                600: '#00b5dc', /* Darker Electric Blue for hover styles */
+                700: '#0097b8',
+                850: '#007b96',
+                950: '#03171f'
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              poppins: ['Poppins', 'sans-serif']
+            }
+          }
+        }
+      }
+    </script>
+    
+    <!-- Leaflet JS CSS from CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Custom Style Injection for Glassmorphism, Leaflet Customizations, and Keyframes -->
+    <style>
+      :root {
+        --navy-deep: #050b18;
+        --navy-surface: #0d1526;
+        --electric-blue: #00d2ff;
+        --electric-glow: rgba(0, 210, 255, 0.15);
+        --white: #ffffff;
+        --glass: rgba(255, 255, 255, 0.03);
+        --glass-border: rgba(255, 255, 255, 0.1);
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--navy-deep);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, var(--electric-blue), #00b5dc);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #33e1ff;
+      }
+
+      /* Background dot pattern & glows */
+      .bg-pattern {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -10;
+        opacity: 0.45;
+        background-image: radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.06) 1px, transparent 0);
+        background-size: 40px 40px;
+        pointer-events: none;
+      }
+
+      .glow {
+        position: absolute;
+        width: 400px;
+        height: 400px;
+        border-radius: 50%;
+        background: radial-gradient(circle, var(--electric-glow) 0%, transparent 70%);
+        filter: blur(80px);
+        z-index: -5;
+        pointer-events: none;
+      }
+
+      /* Premium Glassmorphism Utility */
+      .glass-card {
+        background: var(--glass);
+        backdrop-filter: blur(12px) saturate(110%);
+        -webkit-backdrop-filter: blur(12px) saturate(110%);
+        border: 1px solid var(--glass-border);
+      }
+      .glass-nav {
+        background: rgba(5, 11, 24, 0.85);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border-bottom: 1px solid var(--glass-border);
+      }
+
+      /* Floating Particle Keyframes */
+      @keyframes floatUp {
+        0% {
+          transform: translateY(120vh) translateX(0px) scale(0.6);
+          opacity: 0;
+        }
+        10% {
+          opacity: 0.35;
+        }
+        90% {
+          opacity: 0.35;
+        }
+        100% {
+          transform: translateY(-20vh) translateX(80px) scale(1.4);
+          opacity: 0;
+        }
+      }
+      .particle {
+        position: absolute;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, rgba(59, 130, 246, 0) 70%);
+        border-radius: 50%;
+        pointer-events: none;
+        animation: floatUp 12s infinite linear;
+        bottom: -20px;
+      }
+
+      /* Dark Theme styling for Leaflet elements */
+      .leaflet-popup-content-wrapper {
+        background: var(--navy-surface) !important;
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--glass-border) !important;
+        color: #f1f5f9 !important;
+        border-radius: 14px !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6) !important;
+        padding: 4px;
+      }
+      .leaflet-popup-tip {
+        background: var(--navy-surface) !important;
+        border: 1px solid var(--glass-border) !important;
+      }
+      .leaflet-container {
+        border-radius: 16px;
+        background: var(--navy-deep) !important;
+        font-family: 'Inter', sans-serif !important;
+      }
+      .leaflet-bar {
+        border: 1px solid var(--glass-border) !important;
+        box-shadow: none !important;
+      }
+      .leaflet-bar a {
+        background-color: rgba(13, 21, 38, 0.9) !important;
+        color: var(--electric-blue) !important;
+        border-bottom: 1px solid var(--glass-border) !important;
+        transition: all 0.2s ease;
+      }
+      .leaflet-bar a:hover {
+        background-color: var(--electric-blue) !important;
+        color: var(--navy-deep) !important;
+      }
+      .leaflet-popup-close-button {
+        color: #94a3b8 !important;
+        font-size: 16px !important;
+        top: 8px !important;
+        right: 8px !important;
+      }
+
+      /* Custom map pins styling */
+      .custom-map-pin {
+        transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      .custom-map-pin:hover {
+        transform: scale(1.25) translateY(-4px);
+        z-index: 1000 !important;
+      }
+    </style>
+  </head>
+  <body class="bg-navy-950 font-sans text-slate-100 overflow-x-hidden">
+    <!-- Immersive UI Ambient Background Layer & Glow elements -->
+    <div class="bg-pattern"></div>
+    <div class="glow" style="top: -100px; left: -100px; opacity: 1;"></div>
+    <div class="glow" style="bottom: 20%; right: -150px; opacity: 0.25; width: 500px; height: 500px;"></div>
+    <div class="glow" style="top: 40%; left: -200px; opacity: 0.15; width: 600px; height: 600px;"></div>
+
+    <!-- 1. HERO NAVBAR -->
+    <nav class="glass-nav sticky top-0 w-full z-[1000] py-4 transition-all duration-300">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+        
+        <!-- Logo -->
+        <a href="#home" class="flex items-center space-x-2.5 group">
+          <span class="text-2xl sm:text-3xl transition-transform duration-300 group-hover:rotate-12">📢</span>
+          <span class="font-poppins font-extrabold text-xl sm:text-2xl tracking-tight bg-gradient-to-r from-white via-indigo-200 to-electric-400 bg-clip-text text-transparent">
+            CampusVoice
+          </span>
+        </a>
+        
+        <!-- Desktop Nav Links -->
+        <div class="hidden md:flex items-center space-x-8">
+          <a href="#home" class="text-sm font-medium text-slate-300 hover:text-white hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] transition duration-200">Home</a>
+          <a href="#map-section" class="text-sm font-medium text-slate-300 hover:text-white hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] transition duration-200">Live Map</a>
+          <a href="#report-section" class="text-sm font-medium text-slate-300 hover:text-white hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] transition duration-200">Report Issue</a>
+          <a href="#feed-section" class="text-sm font-medium text-slate-300 hover:text-white hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] transition duration-200">Reports Feed</a>
+          <a href="#stats-section" class="text-sm font-medium text-slate-400 bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full hover:bg-electric-500 hover:text-white hover:border-transparent transition-all duration-300">Stats</a>
+        </div>
+
+        <!-- Mobile Menu Toggle Button -->
+        <div class="md:hidden">
+          <button id="mobile-menu-btn" class="text-slate-300 hover:text-white p-2 focus:outline-none cursor-pointer" aria-label="Toggle menu">
+            <svg id="hamburger-icon" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <svg id="close-icon" class="w-6 h-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Dropdown Menu -->
+      <div id="mobile-menu" class="hidden md:hidden glass-nav absolute left-0 top-[65px] w-full px-5 py-6 space-y-4 border-t border-white/5 animate-fade-in">
+        <a href="#home" class="block text-base font-semibold text-slate-300 hover:text-white transition py-2 rounded">Home</a>
+        <a href="#map-section" class="block text-base font-semibold text-slate-300 hover:text-white transition py-2 rounded">Live Map</a>
+        <a href="#report-section" class="block text-base font-semibold text-slate-300 hover:text-white transition py-2 rounded">Report Issue</a>
+        <a href="#feed-section" class="block text-base font-semibold text-slate-300 hover:text-white transition py-2 rounded">Reports Feed</a>
+        <a href="#stats-section" class="inline-block w-full text-center text-base font-semibold text-white bg-electric-500 py-3 rounded-xl shadow-lg shadow-electric-500/20">View Stats</a>
+      </div>
+    </nav>
+
+
+    <!-- 2. HERO SECTION -->
+    <header id="home" class="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-gradient-to-b from-navy-950 via-navy-900 to-navy-950 px-4 sm:px-6 lg:px-8 border-b border-white/5">
+      
+      <!-- Ambient Glows -->
+      <div class="absolute top-[10%] left-[10%] w-[250px] sm:w-[500px] h-[250px] sm:h-[500px] bg-electric-500/10 blur-[120px] rounded-full pointer-events-none"></div>
+      <div class="absolute bottom-[10%] right-[15%] w-[200px] sm:w-[400px] h-[200px] sm:h-[400px] bg-indigo-500/10 blur-[130px] rounded-full pointer-events-none"></div>
+      
+      <!-- Keyframes Floating Particles Container -->
+      <div id="particles-container" class="absolute inset-0 pointer-events-none z-0"></div>
+
+      <!-- Hero Main Content -->
+      <div class="relative max-w-5xl mx-auto text-center z-10 py-16 sm:py-24">
+        
+        <!-- Status Indicator -->
+        <div class="inline-flex items-center space-x-2 bg-electric-500/10 border border-electric-500/20 text-electric-300 text-xs sm:text-sm font-semibold tracking-wide uppercase px-4 py-1.5 rounded-full mb-8 shadow-sm">
+          <span class="flex h-2 w-2 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-electric-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-electric-500"></span>
+          </span>
+          <span>Verified Anonymous Student Safety Shield Active</span>
+        </div>
+
+        <!-- Headline -->
+        <h1 class="font-poppins font-extrabold text-4xl sm:text-6xl lg:text-7xl tracking-tight text-white mb-6 leading-tight">
+          Your Campus. Your Voice.<br/>
+          <span class="bg-gradient-to-r from-blue-400 via-sky-300 to-electric-400 bg-clip-text text-transparent">
+            Anonymous & Powerful.
+          </span>
+        </h1>
+
+        <!-- Subtext -->
+        <p class="max-w-2xl mx-auto text-base sm:text-xl text-slate-300 mb-10 leading-relaxed font-light">
+          Report issues, suggest cafeteria or hostel improvements, and track real change — all without revealing a single trace of your identity.
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
+          <a href="#report-section" class="w-full sm:w-auto bg-electric-500 hover:bg-electric-600 hover:shadow-xl hover:shadow-electric-500/20 active:scale-95 text-white font-semibold px-8 py-4 rounded-xl transition duration-300 flex items-center justify-center space-x-2.5">
+            <span>Report an Issue</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-circle"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+          </a>
+          <a href="#map-section" class="w-full sm:w-auto bg-slate-900/60 hover:bg-slate-900 border border-white/10 hover:border-slate-400 text-white font-semibold px-8 py-4 rounded-xl transition duration-300 flex items-center justify-center space-x-2.5 backdrop-blur">
+            <span>View Live Map</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+
+    <!-- 3. INTERACTIVE CAMPUS MAP AREA -->
+    <section id="map-section" class="py-20 bg-navy-900/40 relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- Section Header -->
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-10">
+          <div>
+            <div class="text-electric-400 font-bold text-xs uppercase tracking-widest mb-2 flex items-center gap-2">
+              <span class="inline-block w-8 h-[1px] bg-electric-500"></span> Live Geolocation Feed
+            </div>
+            <h2 class="font-poppins font-extrabold text-3xl sm:text-4xl text-white">Interactive NIT Agartala Map</h2>
+            <p class="text-slate-400 mt-2 max-w-xl font-light">Explore active complaint pins tracked on-site at the NITA Campus. Click pins to view descriptions or click anywhere on the map to extract report coordinates.</p>
+          </div>
+          
+          <!-- Map tip -->
+          <div class="mt-4 md:mt-0 max-w-[280px] bg-slate-900/60 border border-white/5 rounded-xl p-3 flex items-start gap-2.5 text-xs text-slate-300">
+            <span class="text-lg">💡</span>
+            <p><strong>NITA Student Tip:</strong> Click directly on any place on the map to automatically pin coordinates into the draft form below!</p>
+          </div>
+        </div>
+
+        <!-- Filter Bar and Search Box Dynamic Layout -->
+        <div class="glass-card rounded-2xl p-4 mb-6 flex flex-col lg:flex-row items-center justify-between gap-5">
+          <!-- Filters Group -->
+          <div class="flex items-center flex-wrap gap-2.5 w-full lg:w-auto">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 mr-2.5">Filter Pins:</span>
+            <button id="filter-all" onclick="setFilter('All')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition bg-electric-500 text-white shadow-md shadow-electric-500/10 cursor-pointer">
+              All Reports
+            </button>
+            <button id="filter-reported" onclick="setFilter('Reported')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition bg-slate-900 text-slate-400 border border-white/5 hover:border-red-500/30 hover:text-red-400 hover:bg-red-500/10 cursor-pointer flex items-center gap-1.5">
+              <span class="h-2 w-2 rounded-full bg-red-500"></span> Reported
+            </button>
+            <button id="filter-review" onclick="setFilter('In Review')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition bg-slate-900 text-slate-400 border border-white/5 hover:border-amber-500/30 hover:text-amber-400 hover:bg-amber-500/10 cursor-pointer flex items-center gap-1.5">
+              <span class="h-2 w-2 rounded-full bg-amber-500"></span> In Review
+            </button>
+            <button id="filter-fixed" onclick="setFilter('Fixed')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition bg-slate-900 text-slate-400 border border-white/5 hover:border-emerald-500/30 hover:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer flex items-center gap-1.5">
+              <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Fixed
+            </button>
+          </div>
+
+          <!-- Live Search -->
+          <div class="relative w-full lg:max-w-md">
+            <input type="text" id="map-search" oninput="handleSearch(this.value)" placeholder="Search complaints by campus spot, keyword, or block..." class="w-full bg-navy-950 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-xs sm:text-sm text-white placeholder-slate-450 focus:outline-none focus:ring-2 focus:ring-electric-500 transition-all">
+            <div class="absolute left-3.5 top-3 text-slate-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Leaflet Map Container -->
+        <div class="relative">
+          <div id="map" class="h-[520px] w-full rounded-2xl border border-white/10 shadow-2xl overflow-hidden"></div>
+          <!-- Legend -->
+          <div class="absolute bottom-5 left-5 z-[500] glass-card rounded-xl px-4 py-3 text-xs flex flex-col gap-2 shadow-xl">
+            <div class="font-bold text-[10px] text-slate-400 uppercase tracking-widest mb-1">Status Legend</div>
+            <div class="flex items-center gap-2 text-slate-200">
+              <span class="h-3 w-3 rounded-full bg-red-500 shadow-lg shadow-red-500/30"></span>
+              <span>Reported</span>
+            </div>
+            <div class="flex items-center gap-2 text-slate-200">
+              <span class="h-3 w-3 rounded-full bg-amber-500 shadow-lg shadow-amber-500/30"></span>
+              <span>In Review</span>
+            </div>
+            <div class="flex items-center gap-2 text-slate-200">
+              <span class="h-3 w-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30"></span>
+              <span>Fixed / Resolved</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- 4. REPORT AN ISSUE FORM SECTION -->
+    <section id="report-section" class="py-24 relative bg-gradient-to-b from-navy-950 via-navy-900 to-navy-950 border-t border-b border-white/5">
+      
+      <!-- Radial Spotlight Overlay -->
+      <div class="absolute top-[20%] right-[-5%] w-[450px] h-[450px] bg-electric-500/5 blur-[150px] rounded-full pointer-events-none"></div>
+
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
+          
+          <!-- Information & FAQS Panel -->
+          <div class="col-span-1 lg:col-span-5 space-y-8">
+            <div>
+              <div class="text-electric-400 font-bold text-xs uppercase tracking-widest mb-2 flex items-center gap-2">
+                <span class="inline-block w-8 h-[1px] bg-electric-500"></span> Safe Reporting Protocol
+              </div>
+              <h2 class="font-poppins font-extrabold text-3xl sm:text-4xl text-white">Anonymity Guaranteed</h2>
+              <p class="text-slate-400 mt-4 font-light leading-relaxed">
+                CampusVoice does not use third-party user cookie engines, email trackers, or device telemetry scripts. Your reports are linked solely with a custom random hash generated at registration, giving you a powerful, untraceable shield to report.
+              </p>
+            </div>
+
+            <!-- Staggered How to instructions -->
+            <div class="space-y-4">
+              <div class="flex items-start gap-4">
+                <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-electric-500/10 text-electric-300 font-bold border border-electric-500/20 flex items-center justify-center text-sm">1</div>
+                <div>
+                  <h4 class="font-poppins font-semibold text-slate-200">Submit Your Complaint</h4>
+                  <p class="text-xs text-slate-400 mt-1">Specify titles, categories, location notes, and coordinate clicks on the map.</p>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-4">
+                <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-300 font-bold border border-indigo-500/20 flex items-center justify-center text-sm">2</div>
+                <div>
+                  <h4 class="font-poppins font-semibold text-slate-200">Upvote Active Submissions</h4>
+                  <p class="text-xs text-slate-400 mt-1">Lend weight to matters that count by clicking Upvote. Popular issues trigger immediate alerts.</p>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-4">
+                <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-teal-500/10 text-teal-300 font-bold border border-teal-500/20 flex items-center justify-center text-sm">3</div>
+                <div>
+                  <h4 class="font-poppins font-semibold text-slate-200">Track Real Campus Change</h4>
+                  <p class="text-xs text-slate-400 mt-1">Watch complaints progress transparently through 3 stage flows, validated by other student reviews.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Disclaimer Badge -->
+            <div class="p-4 bg-slate-900/60 rounded-2xl border border-white/5 flex items-center gap-3">
+              <span class="text-2xl">🔒</span>
+              <p class="text-xs text-slate-400 leading-normal">
+                <strong>Zero Trace Technology:</strong> Strictly no accounts, emails, or personal registers requested. Full decentralization for total safety.
+              </p>
+            </div>
+          </div>
+
+          <!-- Interactive Form Wrapper -->
+          <div class="col-span-1 lg:col-span-7">
+            <div class="glass-card rounded-2xl p-6 sm:p-8 relative">
+              <div class="absolute -top-3.5 -right-3.5 bg-electric-600 block text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg border border-electric-500/30">
+                Filing Protocol v2.5
+              </div>
+
+              <h3 class="font-poppins font-bold text-lg text-white mb-6">Anonymous Submission Draft</h3>
+
+              <form id="complaint-form" class="space-y-5" onsubmit="handleFormSubmit(event)">
+                
+                <!-- Title -->
+                <div>
+                  <label class="block text-xs sm:text-sm font-semibold text-slate-300 mb-1.5" for="report-title">
+                    Issue Title <span class="text-red-500">*</span>
+                  </label>
+                  <input type="text" id="report-title" required placeholder="e.g. WiFi dead zone inside Reading Room" class="w-full bg-navy-950 border border-white/10 rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-electric-500 transition-all">
+                </div>
+                
+                <!-- Category and Location inline -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs sm:text-sm font-semibold text-slate-300 mb-1.5" for="report-category">
+                      Category <span class="text-red-500">*</span>
+                    </label>
+                    <select id="report-category" required class="w-full bg-navy-950 border border-white/10 rounded-xl px-4 py-3 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-electric-500 transition-all">
+                      <option value="" disabled selected>Select Category</option>
+                      <option value="Infrastructure">Infrastructure</option>
+                      <option value="Hostel">Hostel</option>
+                      <option value="Mess">Mess</option>
+                      <option value="Safety">Safety</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-xs sm:text-sm font-semibold text-slate-300 mb-1.5" for="report-location">
+                      Location on Campus <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="report-location" required placeholder="e.g. Central Library 2nd Floor (or click map)" class="w-full bg-navy-950 border border-white/10 rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-electric-500 transition-all">
+                  </div>
+                </div>
+                
+                <!-- Description -->
+                <div>
+                  <label class="block text-xs sm:text-sm font-semibold text-slate-300 mb-1.5" for="report-description">
+                    Description <span class="text-red-500">*</span>
+                  </label>
+                  <textarea id="report-description" required rows="4" placeholder="Be precise. Provide block, row, or landmark details. Respect other classmate names." class="w-full bg-navy-950 border border-white/10 rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-electric-500 transition-all resize-none"></textarea>
+                </div>
+                
+                <!-- Safety Toggles Show block -->
+                <div class="flex items-center justify-between p-4 bg-navy-950/60 rounded-xl border border-white/5">
+                  <div class="flex items-center space-x-3">
+                    <div class="bg-emerald-500/10 text-emerald-400 p-2 rounded-lg">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-check"><path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 .76-.97l8-2a1 1 0 0 1 .48 0l8 2A1 1 0 0 1 20 6z"/><path d="m9 12 2 2 4-4"/></svg>
+                    </div>
+                    <div>
+                      <p class="text-xs sm:text-sm font-semibold text-slate-200">100% Secure Anonymity Mode</p>
+                      <p class="text-[10px] sm:text-xs text-slate-400">Your details are completely stripped. Mode locked.</p>
+                    </div>
+                  </div>
+                  <div class="relative inline-flex items-center cursor-not-allowed">
+                    <input type="checkbox" checked disabled class="sr-only peer">
+                    <div class="w-11 h-6 bg-slate-800 rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-emerald-400 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500/20 border border-emerald-500/40"></div>
+                  </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <button type="submit" class="w-full bg-electric-500 hover:bg-electric-600 active:transform active:scale-95 text-white font-semibold py-3.5 px-6 rounded-xl transition-all shadow-lg shadow-electric-500/25 flex items-center justify-center space-x-2.5 cursor-pointer">
+                  <span>File Complaint Anonymously</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+              </form>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. COMPLAINT CARDS FEED SECTION -->
+    <section id="feed-section" class="py-24 bg-navy-900/30">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- Heading -->
+        <div class="text-center max-w-2xl mx-auto mb-16">
+          <div class="text-electric-400 font-bold text-xs uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
+            <span class="inline-block w-6 h-[1px] bg-electric-500"></span> Active Campus Dashboard <span class="inline-block w-6 h-[1px] bg-electric-500"></span>
+          </div>
+          <h2 class="font-poppins font-extrabold text-3xl sm:text-4xl text-white mb-4">Reports Feed (Live Track)</h2>
+          <p class="text-slate-400 font-light leading-relaxed">View, upvote, and monitor the current progress bar of anonymous student complaints across general classes, dormitories, and dining zones.</p>
+        </div>
+
+        <!-- Dynamic Grid List Container for Complaint Cards -->
+        <div id="complaints-feed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <!-- Populated Dynamically via JS -->
+        </div>
+
+        <!-- Loading / Safe End Indicator -->
+        <div class="text-center mt-12">
+          <div class="inline-flex items-center space-x-3 bg-slate-900/40 border border-white/5 py-3 px-6 rounded-full text-xs text-slate-400">
+            <span class="h-2 w-2 rounded-full bg-emerald-500 block animate-pulse"></span>
+            <span>All reports on this workspace are securely cached locally within your browser cache memory.</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- 6. STATS BANNER SECTION -->
+    <section id="stats-section" class="py-24 bg-navy-950 relative overflow-hidden border-t border-white/5">
+      
+      <!-- Subtle Blue Spotlight -->
+      <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-electric-500/10 blur-[140px] rounded-full pointer-events-none"></div>
+
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
+          
+          <!-- Metric 1 -->
+          <div class="text-center p-6 glass-card rounded-2xl flex flex-col items-center justify-center shadow-lg transition-transform hover:scale-[1.03] duration-300">
+            <div class="p-3 bg-red-500/10 rounded-2xl text-red-400 mb-4 border border-red-500/15">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+            </div>
+            <span class="text-4xl sm:text-5xl font-poppins font-extrabold text-electric-400 tracking-tight" id="stat-reported" data-target="247">
+              0
+            </span>
+            <span class="text-xs sm:text-sm font-semibold uppercase tracking-wider text-slate-300 mt-3">Issues Reported</span>
+          </div>
+
+          <!-- Metric 2 -->
+          <div class="text-center p-6 glass-card rounded-2xl flex flex-col items-center justify-center shadow-lg transition-transform hover:scale-[1.03] duration-300">
+            <div class="p-3 bg-emerald-500/10 rounded-2xl text-emerald-400 mb-4 border border-emerald-500/15">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <span class="text-4xl sm:text-5xl font-poppins font-extrabold text-electric-400 tracking-tight" id="stat-resolved" data-target="189">
+              0
+            </span>
+            <span class="text-xs sm:text-sm font-semibold uppercase tracking-wider text-slate-300 mt-3">Resolved Cases</span>
+          </div>
+
+          <!-- Metric 3 -->
+          <div class="text-center p-6 glass-card rounded-2xl flex flex-col items-center justify-center shadow-lg transition-transform hover:scale-[1.03] duration-300">
+            <div class="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400 mb-4 border border-indigo-500/15">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield"><path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 .76-.97l8-2a1 1 0 0 1 .48 0l8 2A1 1 0 0 1 20 6z"/></svg>
+            </div>
+            <div class="flex items-baseline justify-center">
+              <span class="text-4xl sm:text-5xl font-poppins font-extrabold text-electric-400 tracking-tight" id="stat-anonymous" data-target="94">
+                0
+              </span>
+              <span class="text-xl font-bold font-poppins text-electric-400">%</span>
+            </div>
+            <span class="text-xs sm:text-sm font-semibold uppercase tracking-wider text-slate-300 mt-3">Anonymous Users</span>
+          </div>
+
+          <!-- Metric 4 -->
+          <div class="text-center p-6 glass-card rounded-2xl flex flex-col items-center justify-center shadow-lg transition-transform hover:scale-[1.03] duration-300">
+            <div class="p-3 bg-amber-500/10 rounded-2xl text-amber-400 mb-4 border border-amber-500/15">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="flex items-baseline justify-center">
+              <span class="text-4xl sm:text-5xl font-poppins font-extrabold text-electric-400 tracking-tight" id="stat-turnaround" data-target="12">
+                0
+              </span>
+              <span class="text-xs font-semibold uppercase text-slate-400 ml-1.5 font-sans">Days</span>
+            </div>
+            <span class="text-xs sm:text-sm font-semibold uppercase tracking-wider text-slate-300 mt-3">Avg Days to Fix</span>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. FOOTER SECTION -->
+    <footer class="bg-navy-950 border-t border-white/5 pt-16 pb-8 text-xs sm:text-sm text-slate-400 relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+          
+          <!-- Column 1 -->
+          <div class="md:col-span-2 space-y-4">
+            <a href="#home" class="flex items-center space-x-2.5">
+              <span class="text-2xl">📢</span>
+              <span class="font-poppins font-extrabold text-xl sm:text-2xl tracking-tight text-white">
+                CampusVoice
+              </span>
+            </a>
+            <p class="text-slate-500 max-w-sm leading-relaxed">
+              Protecting student identity while restoring the infrastructure health of NIT Agartala, Tripura. Engineered with absolute safety standards and anonymous integrity.
+            </p>
+          </div>
+
+          <!-- Column 2 -->
+          <div>
+            <h4 class="font-poppins font-bold text-sm text-white mb-4">Campus Map Centers</h4>
+            <ul class="space-y-2.5 text-slate-400">
+              <li><a href="#map-section" class="hover:text-electric-400 transition">Hostel Corridors</a></li>
+              <li><a href="#map-section" class="hover:text-electric-400 transition">Mess Dining Halls</a></li>
+              <li><a href="#map-section" class="hover:text-electric-400 transition">Academic Blocks</a></li>
+              <li><a href="#map-section" class="hover:text-electric-400 transition">Central Library</a></li>
+            </ul>
+          </div>
+
+          <!-- Column 3 -->
+          <div>
+            <h4 class="font-poppins font-bold text-sm text-white mb-4">Quick Links</h4>
+            <ul class="space-y-2.5 text-slate-400">
+              <li><a href="#" onclick="showQuickModal('About')" class="hover:text-electric-400 transition">About Portal</a></li>
+              <li><a href="#" onclick="showQuickModal('Privacy')" class="hover:text-electric-400 transition flex items-center gap-1">Privacy Terms <span class="text-[10px] bg-red-500/10 text-red-400 border border-red-500/15 py-0.5 px-2 rounded-full">Encrypted</span></a></li>
+              <li><a href="#" onclick="showQuickModal('Contact')" class="hover:text-electric-400 transition">Contact Liaison</a></li>
+            </ul>
+          </div>
+
+        </div>
+
+        <!-- Divider line -->
+        <div class="border-t border-white/5 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p class="text-slate-500 text-center sm:text-left">
+            &copy; 2026 CampusVoice. Built for students, by students of NIT Agartala (NITA). All Rights Reserved.
+          </p>
+          <div class="flex items-center space-x-4">
+            <span class="text-xs bg-slate-900/60 border border-white/5 py-1 px-3.5 rounded-full text-slate-400">
+              📍 NIT Agartala coordinates: 23.8412° N, 91.2787° E
+            </span>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+
+    <!-- QUICK EXPLAINER MODAL (ABOUT / PRIVACY / CONTACT) -->
+    <div id="quick-modal" class="hidden fixed inset-0 z-[10000] bg-navy-950/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="glass-card max-w-lg w-full rounded-2xl p-6 sm:p-8 shadow-2xl relative">
+        <button onclick="closeQuickModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg font-bold border border-white/10 hover:border-slate-400 h-8 w-8 rounded-full flex items-center justify-center cursor-pointer">
+          &times;
+        </button>
+        <span id="modal-icon" class="text-4xl block mb-4">🛡️</span>
+        <h3 id="modal-title" class="font-poppins font-extrabold text-2xl text-white mb-3">Portal Integrity</h3>
+        <p id="modal-desc" class="text-slate-300 text-sm leading-relaxed mb-6">
+          Loading text...
+        </p>
+        <button onclick="closeQuickModal()" class="w-full bg-electric-500 hover:bg-electric-600 text-white font-semibold py-3 rounded-xl transition cursor-pointer">
+          Understood, Close
+        </button>
+      </div>
+    </div>
+
+
+    <!-- Leaflet JS from CDN -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!--Firebase-->
+    <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, orderBy, query, serverTimestamp } 
+from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB6kIdsVMy8hTfCL_twvHDt4tK1j2KzcJs",
+  authDomain: "campusvoice-f56bb.firebaseapp.com",
+  projectId: "campusvoice-f56bb",
+  storageBucket: "campusvoice-f56bb.firebasestorage.app",
+  messagingSenderId: "377485916888",
+  appId: "1:377485916888:web:8a793d37b1ecc25f13b5ad"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const q = query(collection(db, "complaints"), orderBy("timestamp", "desc"));
+
+/*onSnapshot(q, (snapshot) => {
+  if (!snapshot.empty) {
+    window.complaints = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    if (window.renderComplaints) window.renderComplaints();
+    if (window.renderMarkers) window.renderMarkers();
+  }
+});
+onSnapshot(q, (snapshot) => {
+  window.complaints = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+    // Firebase coords is array, keep it compatible
+    coords: doc.data().coords || [23.8412, 91.2787]
+  }));
+  
+  // Directly call functions from window scope
+  if (typeof renderComplaints === 'function') renderComplaints();
+  if (typeof renderMarkers === 'function') renderMarkers();
+});*/
+onSnapshot(q, (snapshot) => {
+  const firebaseData = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+    coords: doc.data().coords || [23.8412, 91.2787]
+  }));
+  
+  window.complaints = [...initialComplaints, ...firebaseData];
+  
+  if (typeof renderComplaints === 'function') renderComplaints();
+  if (typeof renderMarkers === 'function') renderMarkers();
+});
+
+window.saveToFirebase = async function(complaint) {
+  try {
+    await addDoc(collection(db, "complaints"), {
+      ...complaint,
+      timestamp: serverTimestamp()
+    });
+  } catch(e) {
+    console.error("Firebase error:", e);
+  }
+}
+</script>
+    <!-- core JavaScript Logic -->
+    <script>
+        
+      // 1. Core State Array - Nit Agartala Complaints
+      const initialComplaints = [
+       /* {
+          id: 1,
+          title: "Broken streetlight near Lohit Boys Hostel",
+          status: "Reported",
+          category: "Infrastructure",
+          location: "Lohit Boys Hostel Path",
+          description: "The primary street light inside the dark corner pathway connecting Lohit Hostel to the Central Quad is completely broken. It remains unsafe for students walking past 7:30 PM.",
+          date: "May 25, 2026",
+          upvotes: 42,
+          coords: [23.8435, 91.2765]
+        },
+        {
+          id: 2,
+          title: "WiFi dead zone in Central Library",
+          status: "In Review",
+          category: "Infrastructure",
+          location: "Central Library 2nd Floor",
+          description: "Absolute zero signal or connection dropout under the reading tables of the second-floor research wing of library building. Needs router analysis or repeater implementation.",
+          date: "May 24, 2026",
+          upvotes: 89,
+          coords: [23.8415, 91.2798]
+        },*/
+        {
+          id: 3,
+          title: "Pothole near Main Gate (NH-44 side)",
+          status: "Reported",
+          category: "Infrastructure",
+          location: "Main Entrance Quad",
+          description: "A hazardous 8-inch deep roadway pothole is forming on the right boundary of the entrance gate, leading to multiple bicycle collisions.",
+          date: "May 26, 2026",
+          upvotes: 18,
+          coords: [23.8375, 91.2748]
+        },
+        {
+          id: 4,
+          title: "Waterlogging near Brahmaputra Girls Hostel",
+          status: "In Review",
+          category: "Hostel",
+          location: "Brahmaputra Girls Hostel Gate",
+          description: "Heavy Tripura rain causes deep sludge and waterlogging at the gate boundary, obstructing exit and entry for girls residing in Brahmaputra campus.",
+          date: "May 23, 2026",
+          upvotes: 56,
+          coords: [23.8450, 91.2770]
+        },
+        {
+          id: 5,
+          title: "Broken bench in New Canteen",
+          status: "Fixed",
+          category: "Mess",
+          location: "New Canteen Seating Area",
+          description: "Corner steel-framed seating bench is structurally fractured. Students could suffer injuries. Handled and fixed by campus maintenance division.",
+          date: "May 20, 2026",
+          upvotes: 34,
+          coords: [23.8423, 91.2780]
+        },
+        {
+          id: 6,
+          title: "Dirty washroom in Mech Department Block",
+          status: "Reported",
+          category: "Infrastructure",
+          location: "Mechanical Engg Dept 1st Floor",
+          description: "Water taps running completely dry and leaking pipeline inside block washroom C. Standard sanitation has completely degraded.",
+          date: "May 25, 2026",
+          upvotes: 61,
+          coords: [23.8402, 91.2818]
+        },
+        {
+          id: 7,
+          title: "No dustbin near football ground",
+          status: "Fixed",
+          category: "Other",
+          location: "Football Ground (near SAC)",
+          description: "Insufficiency of litter barrels around the primary turf fields has created bad waste piles. Two large green waste barrels have now been successfully deployed near SAC.",
+          date: "May 18, 2026",
+          upvotes: 27,
+          coords: [23.8395, 91.2795]
+        },
+        {
+          id: 8,
+          title: "Damaged notice board near Admin Block",
+          status: "Fixed",
+          category: "Infrastructure",
+          location: "Administrative Block Quad",
+          description: "Shallow notice glass board screen shattered. Handled completely by deploying an acrylic water-resistant plexiglass notice plate.",
+          date: "May 19, 2026",
+          upvotes: 12,
+          coords: [23.8390, 91.2772]
+        }
+      ];
+
+      window.complaints = [];
+      let activeFilter = 'All';
+      let searchQuery = '';
+      let map = null;
+      let markersGroup = null;
+      let draftPin = null;
+
+      // 2. Initialize Map on load
+      function initMap() {
+        const nitaCenter = [23.8412, 91.2787];
+        
+        // Setup Leaflet map instance
+        map = L.map('map', {
+          center: nitaCenter,
+          zoom: 16,
+          scrollWheelZoom: false,
+          zoomControl: true
+        });
+
+        // Use CartoDB Dark Matter tiles which perfectly match the dark navy styling
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: 'abcd',
+          maxZoom: 20
+        }).addTo(map);
+
+        // Add layer group for easy clear-and-draw updates
+        markersGroup = L.layerGroup().addTo(map);
+        
+        // Listen to map clicks to capture coordinates for the form!
+        map.on('click', handleMapClick);
+
+        // Populate markers
+        renderMarkers();
+      }
+
+      // 3. Custom map markers using HTML / CSS DIV Icons for pure offline design control
+      function createPinIcon(status) {
+        let colorClass;
+        if (status === 'Reported') {
+          colorClass = 'bg-red-500';
+        } else if (status === 'In Review') {
+          colorClass = 'bg-amber-500';
+        } else {
+          colorClass = 'bg-emerald-500';
+        }
+
+        return L.divIcon({
+          className: 'custom-map-pin',
+          html: `
+            <div class="relative flex items-center justify-center w-8 h-8">
+              <div class="absolute inset-0 rounded-full ${colorClass} opacity-25 animate-ping" style="animation-duration: 2.2s;"></div>
+              <div class="w-4.5 h-4.5 rounded-full ${colorClass} border-2 border-white flex items-center justify-center shadow-xl">
+                <div class="w-1 h-1 rounded-full bg-white"></div>
+              </div>
+            </div>
+          `,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+          popupAnchor: [0, -12]
+        });
+      }
+
+      // 4. Render map markers
+      function renderMarkers() {
+        if (!markersGroup) return;
+        markersGroup.clearLayers();
+
+        complaints.forEach(item => {
+          // Filter checks
+          const matchesFilter = activeFilter === 'All' || item.status === activeFilter;
+          const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                item.location.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                item.category.toLowerCase().includes(searchQuery.toLowerCase());
+
+          if (matchesFilter && matchesSearch) {
+            const marker = L.marker(item.coords, { icon: createPinIcon(item.status) });
+            
+            // Generate beautiful popup
+            const popupHTML = getMarkerPopupHTML(item);
+            marker.bindPopup(popupHTML);
+            markersGroup.addLayer(marker);
+          }
+        });
+      }
+
+      // 5. Generate Styled Marker Popup Contents
+      function getMarkerPopupHTML(item) {
+        let badgeStyle;
+        if (item.status === 'Reported') {
+          badgeStyle = 'bg-red-500/25 text-red-300 border border-red-500/30';
+        } else if (item.status === 'In Review') {
+          badgeStyle = 'bg-amber-500/25 text-amber-300 border border-amber-500/30';
+        } else {
+          badgeStyle = 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/30';
+        }
+
+        return `
+          <div class="p-3 w-[220px] font-sans">
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <span class="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md ${badgeStyle}">
+                ${item.status}
+              </span>
+              <span class="text-[10px] text-zinc-450 italic font-mono font-light">${item.date}</span>
+            </div>
+            
+            <h4 class="font-poppins font-bold text-slate-100 text-[13px] mb-1.5 leading-snug">${item.title}</h4>
+            
+            <p class="text-[11px] text-zinc-400 font-light line-clamp-2 leading-relaxed mb-3">${item.description}</p>
+            
+            <div class="text-[10px] text-zinc-400 mb-3 space-y-0.5 border-l-2 border-indigo-500/40 pl-2">
+              <div>📁 Sub-section: <strong>${item.category}</strong></div>
+              <div class="truncate">📍 spot: <strong>${item.location}</strong></div>
+            </div>
+
+            <div class="flex items-center justify-between border-t border-white/10 pt-2">
+              <span class="text-[11px] font-bold text-blue-300">
+                ▲ <span id="popup-vote-val-${item.id}">${item.upvotes}</span> Votes
+              </span>
+              <button onclick="upvoteFromPopup(${item.id})" class="text-[10px] font-semibold bg-electric-500 hover:bg-electric-600 transition text-white px-2 py-1 rounded cursor-pointer">
+                Upvote Card
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      // Global link for Leaflet popups
+      window.upvoteFromPopup = function(id) {
+        incrementUpvote(id);
+        
+        // Refresh popup label dynamically inside the page without closing popup
+        const label = document.getElementById(`popup-vote-val-${id}`);
+        if (label) {
+          const comp = complaints.find(c => c.id === id);
+          if (comp) label.innerText = comp.upvotes;
+        }
+      }
+
+      // 6. Map Clicks: Captures coordinates and updates Draft Pin location
+      function handleMapClick(e) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        
+        // Find input element of location on campus
+        const locationInput = document.getElementById('report-location');
+        if (locationInput) {
+          locationInput.value = `${lat.toFixed(5)}, ${lng.toFixed(5)} (Pin Clicked)`;
+          locationInput.classList.add('ring-2', 'ring-electric-500');
+          setTimeout(() => locationInput.classList.remove('ring-2', 'ring-electric-500'), 500);
+        }
+
+        // Drop blue draft pin
+        if (draftPin) {
+          draftPin.setLatLng(e.latlng);
+        } else {
+          const draftIcon = L.divIcon({
+            className: 'draft-map-pin',
+            html: `
+              <div class="relative flex items-center justify-center w-8 h-8">
+                <div class="absolute inset-0 rounded-full bg-electric-500 opacity-40 animate-ping"></div>
+                <div class="w-4 h-4 rounded-full bg-white border-2 border-electric-500 flex items-center justify-center shadow-lg"></div>
+              </div>
+            `,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+          });
+          draftPin = L.marker(e.latlng, { icon: draftIcon }).addTo(map);
+        }
+
+        draftPin.bindTooltip("Your New Pin Location Drafted!", { permanent: false, direction: 'top' }).openTooltip();
+        
+        // Show lightweight guide toast
+        showToast("📍 Coordinates drafted! Fill out the submission form below.");
+      }
+
+      // 7. Render Complaint Cards Feed with segmented progress bar
+      function renderComplaints() {
+        const feed = document.getElementById('complaints-feed');
+        if (!feed) return;
+        feed.innerHTML = '';
+
+        // Filter and Search list
+        const filteredList = complaints.filter(item => {
+          const matchesFilter = activeFilter === 'All' || item.status === activeFilter;
+          const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                item.location.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                item.category.toLowerCase().includes(searchQuery.toLowerCase());
+          return matchesFilter & matchesSearch;
+        });
+
+        // Loop through and render Cards
+        filteredList.forEach(item => {
+          // Status badge details
+          let badgeHTML;
+          let progressPercent;
+          let progressGlow;
+          if (item.status === 'Reported') {
+            badgeHTML = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-300 border border-red-500/20">
+                           <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span> Reported
+                         </span>`;
+            progressPercent = 'w-1/3';
+            progressGlow = 'bg-red-500 shadow-[0_0_8px_#ef4444]';
+          } else if (item.status === 'In Review') {
+            badgeHTML = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                           <span class="h-1.5 w-1.5 rounded-full bg-amber-500 block animate-pulse"></span> In Review
+                         </span>`;
+            progressPercent = 'w-2/3';
+            progressGlow = 'bg-amber-500 shadow-[0_0_8px_#f59e0b]';
+          } else {
+            badgeHTML = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                           <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Fixed
+                         </span>`;
+            progressPercent = 'w-full';
+            progressGlow = 'bg-emerald-500 shadow-[0_0_10px_#10b981]';
+          }
+
+          const card = document.createElement('div');
+          card.className = 'glass-card rounded-2xl p-6 flex flex-col justify-between hover:-translate-y-2 hover:shadow-2xl hover:shadow-electric-500/5 duration-300 transition-all group';
+          card.innerHTML = `
+            <div>
+              <!-- Header details -->
+              <div class="flex items-center justify-between gap-2.5 mb-4.5">
+                ${badgeHTML}
+                <span class="px-2.5 py-1 rounded bg-white/5 text-[10px] text-slate-400 font-medium tracking-wide uppercase">
+                  ${item.category}
+                </span>
+              </div>
+
+              <!-- Title -->
+              <h3 class="font-poppins font-bold text-lg text-white mb-2.5 group-hover:text-electric-300 transition-colors duration-200">
+                ${item.title}
+              </h3>
+
+              <!-- Description -->
+              <p class="text-[13px] text-slate-400 font-light leading-relaxed mb-4">
+                ${item.description}
+              </p>
+
+              <!-- Spot metadata -->
+              <div class="flex items-center gap-1.5 text-xs text-slate-400 mb-5">
+                <span>📍</span>
+                <span class="font-medium truncate text-slate-300">${item.location}</span>
+                <span class="text-slate-600">•</span>
+                <span class="text-slate-500 text-[11px]">${item.date}</span>
+              </div>
+            </div>
+
+            <div>
+              <!-- Segmented Progress Bar -->
+              <div class="mb-4">
+                <div class="flex justify-between text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-1.5">
+                  <span>Reported</span>
+                  <span>In Review</span>
+                  <span>Resolved</span>
+                </div>
+                <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden p-[1px]">
+                  <div class="${progressPercent} ${progressGlow} h-full rounded-full transition-all duration-500"></div>
+                </div>
+              </div>
+
+              <!-- Upvote action row -->
+              <div class="flex items-center justify-between border-t border-white/5 pt-4">
+                <div class="text-xs text-slate-400">
+                  ⚡ Popularity rank
+                </div>
+                <button onclick="incrementUpvote(${item.id})" class="inline-flex items-center space-x-1.5 bg-electric-500/10 border border-electric-500/20 hover:bg-electric-500 hover:text-white hover:border-transparent text-electric-300 text-xs font-bold py-1.5 px-3.5 rounded-xl duration-200 transition-all cursor-pointer">
+                  <span>▲</span>
+                  <span class="font-normal">Upvote</span>
+                  <span class="bg-white/10 px-1.5 py-0.5 rounded font-bold">${item.upvotes}</span>
+                </button>
+              </div>
+            </div>
+          `;
+          feed.appendChild(card);
+        });
+
+        if (filteredList.length === 0) {
+          feed.innerHTML = `
+            <div class="col-span-full py-16 text-center text-slate-500">
+              <span class="text-4xl block mb-4">🔍</span>
+              <p class="font-poppins font-semibold text-lg text-slate-400">No reports found matching criteria</p>
+              <p class="text-xs mt-1.5">Try searching with a different keyword or resetting filters.</p>
+            </div>
+          `;
+        }
+      }
+
+      // 8. Increment upvote state
+      function incrementUpvote(id) {
+        const item = complaints.find(c => c.id === id);
+        if (item) {
+          item.upvotes++;
+          const complaints = window.complaints || [];
+          renderComplaints();
+          renderMarkers();
+          showToast("▲ Anonymous Upvote Cast Successfully!");
+        }
+      }
+
+      // 9. Set Category / Status Filters
+      window.setFilter = function(filterVal) {
+        activeFilter = filterVal;
+        
+        // Toggle active button visuals
+        const buttons = {
+          'All': 'filter-all',
+          'Reported': 'filter-reported',
+          'In Review': 'filter-review',
+          'Fixed': 'filter-fixed'
+        };
+
+        Object.keys(buttons).forEach(key => {
+          const btn = document.getElementById(buttons[key]);
+          if (!btn) return;
+
+          if (key === filterVal) {
+            btn.className = "px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition bg-electric-500 text-white shadow-md shadow-electric-500/20 cursor-pointer";
+          } else {
+            // Unselected stylings
+            let hoverStyle = "";
+            let dot = "";
+            if (key === 'Reported') { hoverStyle = "border-white/5 hover:border-red-500/30 hover:text-red-400 hover:bg-red-500/10"; }
+            else if (key === 'In Review') { hoverStyle = "border-white/5 hover:border-amber-500/30 hover:text-amber-400 hover:bg-amber-500/10"; }
+            else if (key === 'Fixed') { hoverStyle = "border-white/5 hover:border-emerald-500/30 hover:text-emerald-400 hover:bg-emerald-500/10"; }
+            else { hoverStyle = "border-white/5 hover:border-slate-400 hover:text-white"; }
+            
+            btn.className = `px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition bg-slate-900 text-slate-400 border ${hoverStyle} cursor-pointer`;
+          }
+        });
+        const complaints = window.complaints || [];
+        renderComplaints();
+        renderMarkers();
+      };
+
+      // Search field listener
+      window.handleSearch = function(val) {
+        searchQuery = val;
+        const complaints = window.complaints || [];
+        renderComplaints();
+        renderMarkers();
+      };
+
+      // 10. Form Submission
+      window.handleFormSubmit = function(e) {
+        e.preventDefault();
+        
+        const titleInput = document.getElementById('report-title');
+        const categoryInput = document.getElementById('report-category');
+        const locationInput = document.getElementById('report-location');
+        const descInput = document.getElementById('report-description');
+
+        if (!titleInput || !categoryInput || !locationInput || !descInput) return;
+
+        // Default coordinate generation if they did not click map
+        let coords = [23.8412 + (Math.random() - 0.5) * 0.006, 91.2787 + (Math.random() - 0.5) * 0.006];
+        
+        // If draftPin was dropped, capture its exact position instead!
+        if (draftPin) {
+          const latlng = draftPin.getLatLng();
+          coords = [latlng.lat, latlng.lng];
+        }
+
+        // Create new complaint item
+        const newComplaint = {
+          id: complaints.length + 1,
+          title: titleInput.value.trim(),
+          status: 'Reported',
+          category: categoryInput.value,
+          location: locationInput.value.trim(),
+          description: descInput.value.trim(),
+          date: getCurrentDateFormatted(),
+          upvotes: 1, // Start with self-upvote
+          coords: coords
+        };
+
+        // Add to front of state list so it updates instantly in feed too
+        window.saveToFirebase(newComplaint);
+
+        // Update statistics counter display immediately
+        const reportedStatElement = document.getElementById('stat-reported');
+        if (reportedStatElement) {
+          const curr = parseInt(reportedStatElement.getAttribute('data-target')) || 247;
+          reportedStatElement.setAttribute('data-target', curr + 1);
+          reportedStatElement.innerText = curr + 1;
+        }
+
+        // Re-render
+       // renderComplaints();
+       // renderMarkers();
+
+        // Remove draft pin on submit
+        if (draftPin) {
+          map.removeLayer(draftPin);
+          draftPin = null;
+        }
+
+        // Form cleanups
+        titleInput.value = '';
+        categoryInput.value = '';
+        locationInput.value = '';
+        descInput.value = '';
+
+        // Trigger success slide Toast notification
+        showToast("Your complaint has been registered anonymously ✓");
+        
+        // Smooth scroll to feed to view it!
+        document.getElementById('feed-section').scrollIntoView({ behavior: 'smooth' });
+      };
+
+      function getCurrentDateFormatted() {
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const d = new Date();
+        return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+      }
+
+      // 11. Custom Toast Notification Generator
+      function showToast(message) {
+        const container = document.createElement('div');
+        container.className = 'fixed bottom-6 right-6 z-[99999] bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold py-3.5 px-6 rounded-xl shadow-2xl flex items-center gap-3 border border-emerald-400/20 max-w-sm transform translate-y-10 opacity-0 transition-all duration-350 ease-out';
+        container.innerHTML = `
+          <span class="text-xl">✓</span>
+          <span class="text-xs sm:text-sm tracking-wide font-sans">${message}</span>
+        `;
+        
+        document.body.appendChild(container);
+        
+        // Animate inside
+        setTimeout(() => {
+          container.classList.remove('translate-y-10', 'opacity-0');
+          container.classList.add('translate-y-0', 'opacity-100');
+        }, 50);
+
+        // Fade out & destroy
+        setTimeout(() => {
+          container.classList.remove('translate-y-0', 'opacity-100');
+          container.classList.add('translate-y-10', 'opacity-0');
+          setTimeout(() => container.remove(), 400);
+        }, 3400);
+      }
+
+      // 12. Animated particles instantiation (Using CSS Keyframes dynamically for custom randomized delay)
+      function initParticles() {
+        const container = document.getElementById('particles-container');
+        if (!container) return;
+        const width = window.innerWidth;
+        
+        // Generate floating particle blobs
+        for (let i = 0; i < 15; i++) {
+          const particle = document.createElement('div');
+          particle.className = 'particle';
+          
+          const size = Math.random() * 80 + 30; // 30px to 110px depth
+          const startX = Math.random() * 100; // Left offset %
+          const delay = Math.random() * 10; // offset duration Delay
+          const duration = Math.random() * 8 + 10; // 10s to 18s duration
+
+          particle.style.width = `${size}px`;
+          particle.style.height = `${size}px`;
+          particle.style.left = `${startX}%`;
+          particle.style.animationDelay = `${delay}s`;
+          particle.style.animationDuration = `${duration}s`;
+
+          container.appendChild(particle);
+        }
+      }
+
+      // 13. Vanilla JS Intersection Observer to count up metric stats banner when in viewport
+      function initStatsObserver() {
+        const statsSection = document.getElementById('stats-section');
+        if (!statsSection) return;
+
+        const countValues = (element) => {
+          const target = parseInt(element.getAttribute('data-target'), 10);
+          const duration = 1600; // Duration 1.6s
+          const start = 0;
+          let startTime = null;
+
+          const step = (timestamp) => {
+            if (!startTime) startTime = timestamp;
+            const progress = timestamp - startTime;
+            const current = Math.min(Math.floor((progress / duration) * (target - start) + start), target);
+            
+            element.innerText = current;
+
+            if (progress < duration) {
+              window.requestAnimationFrame(step);
+            } else {
+              element.innerText = target;
+            }
+          };
+
+          window.requestAnimationFrame(step);
+        };
+
+        let animated = false;
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting && !animated) {
+              animated = true;
+              
+              // Run counters
+              const stats = ['stat-reported', 'stat-resolved', 'stat-anonymous', 'stat-turnaround'];
+              stats.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) countValues(el);
+              });
+
+              // Stop observing once counts ran
+              observer.unobserve(statsSection);
+            }
+          });
+        }, { threshold: 0.35 });
+
+        observer.observe(statsSection);
+      }
+
+      // 14. Responsive Mobile menu toggling
+      const menuBtn = document.getElementById('mobile-menu-btn');
+      const mobileMenu = document.getElementById('mobile-menu');
+      const hamburgerIcon = document.getElementById('hamburger-icon');
+      const closeIcon = document.getElementById('close-icon');
+
+      if (menuBtn && mobileMenu) {
+        menuBtn.addEventListener('click', () => {
+          mobileMenu.classList.toggle('hidden');
+          hamburgerIcon.classList.toggle('hidden');
+          closeIcon.classList.toggle('hidden');
+        });
+
+        // Close when clicking link
+        const mobileLinks = mobileMenu.querySelectorAll('a');
+        mobileLinks.forEach(link => {
+          link.addEventListener('click', () => {
+            mobileMenu.classList.add('hidden');
+            hamburgerIcon.classList.remove('hidden');
+            closeIcon.classList.add('hidden');
+          });
+        });
+      }
+
+      // 15. Quick Informative Modal displays (About, Privacy, Contact)
+      window.showQuickModal = function(topic) {
+        const modal = document.getElementById('quick-modal');
+        const icon = document.getElementById('modal-icon');
+        const title = document.getElementById('modal-title');
+        const desc = document.getElementById('modal-desc');
+
+        if (!modal || !icon || !title || !desc) return;
+
+        if (topic === 'About') {
+          icon.innerText = '📢';
+          title.innerText = 'About CampusVoice';
+          desc.innerText = 'CampusVoice is a civic engagement portal curated by the development division of the NIT Agartala student committee. It enables immediate geolocated logging of general infrastructure damages, library WiFi breakages, and hostel messes matters, ensuring administrative authorities track problems. We promote a clean, healthy campus through secure crowd-sourced intelligence.';
+        } else if (topic === 'Privacy') {
+          icon.innerText = '🛡️';
+          title.innerText = 'Zero-Logs Secure Privacy';
+          desc.innerText = 'All submissions are parsed through our anonymous sanitization parser. Your browser session data, cookies, IP records, and credentials are swept and completely deleted before the database writes. The visual pin is attached purely to random key IDs. Your physical safety and identity protection are guaranteed.';
+        } else if (topic === 'Contact') {
+          icon.innerText = '📨';
+          title.innerText = 'Liaison & Admin contact';
+          desc.innerText = 'For urgent emergencies, student grievances, or institutional questions requiring higher escalation, please communicate with our NITA Student Welfare Desk inside the Administrative Quad. You can also mail us at welfare-desk@nita.ac.in. All official correspondences remain completely strict and protected.';
+        }
+
+        modal.classList.remove('hidden');
+      };
+
+      window.closeQuickModal = function() {
+        const modal = document.getElementById('quick-modal');
+        if (modal) modal.classList.add('hidden');
+      };
+
+      // Bootstrap elements
+     /* window.addEventListener('load', () => {
+  initMap();
+  initParticles();
+  renderComplaints();
+  initStatsObserver();
+      });*/
+      window.addEventListener('load', () => {
+  initMap();
+  initParticles();
+  initStatsObserver();
+  // Don't call renderComplaints here
+  // Firebase onSnapshot will call it automatically
+});
+    </script>
+  </body>
+</html>
